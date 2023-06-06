@@ -1,0 +1,23 @@
+$uninstallKeys = @( "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+                    "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+                    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall" )
+
+$appList = @()
+
+foreach ($key in $uninstallKeys) {
+    $appList += Get-ChildItem $key | foreach {
+        $appKey = $_.PSChildName
+        $appDetails = Get-ItemProperty $key\$appKey | Select-Object DisplayName, SystemComponent
+        if ($appDetails.DisplayName -and ($appDetails.SystemComponent -notlike "1")`
+        -and ($appDetails.DisplayName -notlike "Microsoft Edge Update")) `
+        {
+            $appDetails
+        }
+    }
+}
+
+$appList = $appList | Sort-Object DisplayName -Unique
+$appCount = $appList.Count
+
+Write-Host "Total number of installed applications: $appCount"
+$appList | Export-Csv -Path "C:\Users\$env:UserName\Desktop\InstalledApplications.csv" -Encoding UTF8 -NoTypeInformation
